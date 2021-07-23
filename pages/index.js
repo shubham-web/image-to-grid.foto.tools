@@ -98,6 +98,11 @@ class Home extends Component {
 		let imgBlob = await fetch(this.state.url)
 			.then((e) => e.blob())
 			.catch(console.log);
+
+		if (!imgBlob) {
+			alert("Couldn't load image, This is most probably a CORS issue.");
+			return;
+		}
 		this.blobToDataURL(imgBlob, (dataurl) => {
 			image.src = dataurl;
 		});
