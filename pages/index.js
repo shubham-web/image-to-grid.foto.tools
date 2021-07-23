@@ -1,65 +1,184 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import Head from "next/head";
 
-export default function Home() {
-  return (
-    <div className={styles.container}>
-      <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+import { Component, createRef } from "react";
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
+class Home extends Component {
+	constructor(props) {
+		super(props);
 
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
+		this.state = {
+			url: "",
+		};
 
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
+		this.firstTile = {
+			sx: 0,
+			sy: 0,
+			sWidth: 510 / 3,
+			sHeight: 510 / 3,
+			dx: 0,
+			dy: 0,
+			dWidth: 510 / 3,
+			dHeight: 510 / 3,
+		};
+		this.tilePainPos = [
+			{
+				...this.firstTile,
+			},
+			{
+				...this.firstTile,
+				sx: (510 / 3) * 1,
+			},
+			{
+				...this.firstTile,
+				sx: (510 / 3) * 2,
+			},
+			{
+				...this.firstTile,
+				sy: (510 / 3) * 1,
+			},
+			{
+				...this.firstTile,
+				sx: (510 / 3) * 1,
+				sy: (510 / 3) * 1,
+			},
+			{
+				...this.firstTile,
+				sx: (510 / 3) * 2,
+				sy: (510 / 3) * 1,
+			},
+			{
+				...this.firstTile,
+				sy: (510 / 3) * 2,
+			},
+			{
+				...this.firstTile,
+				sx: (510 / 3) * 1,
+				sy: (510 / 3) * 2,
+			},
+			{
+				...this.firstTile,
+				sx: (510 / 3) * 2,
+				sy: (510 / 3) * 2,
+			},
+		];
 
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
+		this.mainCanvas = createRef();
+		this.urlInput = createRef();
+		this.ctx;
+	}
+	componentDidMount() {
+		let canvas = this.mainCanvas.current;
+		canvas.width = 510;
+		canvas.height = 510;
+		this.ctx = canvas.getContext("2d");
 
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
+		this.setState({
+			url: localStorage.getItem("foto_imageurl") || "https://source.unsplash.com/random/500x500",
+		});
 
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
-      </main>
+		this.syncUrl();
+	}
+	blobToDataURL = (blob, callback) => {
+		let a = new FileReader();
+		a.onload = function (e) {
+			callback(e.target.result);
+		};
+		a.readAsDataURL(blob);
+	};
+	syncUrl = async (e) => {
+		if (e) {
+			this.setState({
+				url: e.target.value,
+			});
+		}
 
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
-    </div>
-  )
+		if (this.state.url === "") return;
+
+		let image = new Image();
+		let imgBlob = await fetch(this.state.url)
+			.then((e) => e.blob())
+			.catch(console.log);
+		this.blobToDataURL(imgBlob, (dataurl) => {
+			image.src = dataurl;
+		});
+
+		image.addEventListener("load", (e) => {
+			this.ctx.clearRect(0, 0, 510, 510);
+			this.ctx.drawImage(image, 0, 0, 510, 510);
+
+			localStorage.setItem("foto_imageurl", this.state.url);
+
+			if (this.state.url === "") {
+				localStorage.removeItem("foto_imageurl");
+			}
+		});
+	};
+	componentDidUpdate(_prevProps, prevState) {
+		if (prevState.url !== this.state.url) {
+			this.syncUrl();
+		}
+	}
+	handleDownloadClick = () => {
+		let cnvs = [];
+		for (let i = 0; i < 9; i++) {
+			let cnv = document.createElement("canvas");
+			cnv.style.border = "1px solid";
+			cnv.id = `#_canvas${i}`;
+			cnv.width = 510 / 3;
+			cnv.height = 510 / 3;
+			let cctx = cnv.getContext("2d");
+			let { sx, sy, sWidth, sHeight, dx, dy } = this.tilePainPos[i];
+			let imgD = this.ctx.getImageData(sx, sy, sWidth, sHeight);
+			console.log(imgD);
+			cctx.putImageData(imgD, dx, dy);
+			cnvs.push(cnv);
+		}
+
+		cnvs.forEach((cnv, index) => {
+			let dataUrl = cnv.toDataURL();
+			let a = document.createElement("a");
+			a.href = dataUrl;
+			a.download = `tile ${index + 1}.png`;
+			a.click();
+		});
+	};
+	render() {
+		return (
+			<>
+				<Head>
+					<title>Image to Grid - 9 Images</title>
+					<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+				</Head>
+
+				<div className="container">
+					<div className="input-field">
+						<input
+							onChange={(e) => {
+								this.setState({
+									url: e.target.value,
+								});
+							}}
+							placeholder="Paste Image URL Here"
+							autoFocus={true}
+							autoComplete="yes"
+							ref={this.urlInput}
+							type="url"
+							value={this.state.url}
+						/>
+					</div>
+
+					<span style={{ display: "block", marginBottom: "16px" }}>Preview:</span>
+					<div className="preview">
+						<img className="gridimg" src="https://tlgur.com/d/Gollrvdg" />
+						<canvas ref={this.mainCanvas} width="512" height="512" className="transparency-grid" id="canvas"></canvas>
+					</div>
+					<button onClick={this.handleDownloadClick} id="downloadBtn" className="waves-effect waves-light btn">
+						Download Grid
+					</button>
+				</div>
+			</>
+		);
+	}
 }
+
+export default Home;
