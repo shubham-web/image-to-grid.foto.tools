@@ -174,7 +174,7 @@ class Home extends Component {
 
 					<span style={{ display: "block", marginBottom: "16px" }}>Preview:</span>
 					<div className="preview">
-						<img className="gridimg" src="https://tlgur.com/d/Gollrvdg" />
+						<img className="gridimg" src="./grid-guide.png" />
 						<canvas ref={this.mainCanvas} width="512" height="512" className="transparency-grid" id="canvas"></canvas>
 					</div>
 					<button onClick={this.handleDownloadClick} id="downloadBtn" className="waves-effect waves-light btn">
